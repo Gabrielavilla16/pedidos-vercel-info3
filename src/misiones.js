@@ -26,10 +26,17 @@ import { ESTADOS } from './datos.js'
 // Pista: prueba en la consola 0.1 + 0.2 y verás por qué hay que redondear.
 //        Math.round(x * 100) / 100
 export function totalPedido(pedido) {
-  return 0 // TODO
+  if (!pedido || !pedido.items || pedido.items.length ===0){
+return 0
+  }  
+const subtotal = pedido.items.reduce((acc,item)=>{
+  return acc+ (item.cantidad * item.precio.Unitario)
+}, 0)
+const descuento =pedido.descuento || 0
+const total = subtotal * (1- descuento)
+return Math.round(total* 100)/100
 }
-
-// ----------------------------------------------------------------------------
+------------------------------------------------------------
 // MISIÓN 2 · RF4 — ¿Este cambio de estado es válido?
 // ----------------------------------------------------------------------------
 // Los estados avanzan en orden y SOLO un paso a la vez:
@@ -39,7 +46,12 @@ export function totalPedido(pedido) {
 // Un estado que no existe también es false.
 // Pista: ESTADOS ya es un arreglo ordenado. ¿Qué te dice indexOf?
 export function puedeTransicionar(actual, nuevo) {
-  return true // TODO: hoy acepta cualquier cosa. ¿Qué tan grave sería eso en producción?
+  const posActual= ESTADOS.indexOf(actual)
+  const posNuevo = ESTADOS.indexOf(nuevo)
+  if (posActual === -1 || posNuevo ===-1) {
+    return false
+  }
+  return posNuevo === posActual + 1
 }
 
 // ----------------------------------------------------------------------------
@@ -54,7 +66,27 @@ export function puedeTransicionar(actual, nuevo) {
 //                         correo: algo@algo.algo   (el email es opcional)
 // Pista: '55 1234-5678'.replace(/[\s-]/g, '')   y   /^\d{10}$/.test(...)
 export function validarCliente(cliente) {
-  return [] // TODO
+const errores = []
+ if (!cliente) return ['nombre_requerido', 'telefono_invalido']
+ const nombreLimpio = (cliente.nombre || '').trim()
+  if (!nombreLimpio) {
+    errores.push('nombre_requerido')
+  }
+  const telefonoLimpio = (cliente.telefono || '').replace(/[\s-]/g, '')
+  const esTelefonoValido = /^\d{10}$/.test(telefonoLimpio)
+  if (!esTelefonoValido) {
+    errores.push('telefono_invalido')
+
+}
+if (cliente.email && cliente.email.trim() !== '') {
+    const emailLimpio = cliente.email.trim()
+    const esEmailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpio)
+    if (!esEmailValido) {
+      errores.push('email_invalido')
+    }
+  }
+
+  return errores
 }
 
 // ----------------------------------------------------------------------------
@@ -64,7 +96,18 @@ export function validarCliente(cliente) {
 //   { registrado: 3, en_preparacion: 3, listo: 2, entregado: 2 }
 // Con una lista vacía, todos van en 0.
 export function resumenPorEstado(pedidos) {
-  return {} // TODO
+  const resultado = {}
+   ESTADOS.forEach(estado => {
+    resultado[estado] = 0
+  })
+   if (Array.isArray(pedidos)) {
+    pedidos.forEach(p => {
+      if (resultado.hasOwnProperty(p.estado)) {
+        resultado[p.estado]++
+      }
+    })
+  }
+  return resultado
 }
 
 // ----------------------------------------------------------------------------
@@ -76,8 +119,26 @@ export function resumenPorEstado(pedidos) {
 // Pista: 'Ramírez'.normalize('NFD').replace(/[̀-ͯ]/g, '')
 //        Investiga qué hace NFD. Es un problema real en sistemas en español.
 export function buscarPedidos(pedidos, texto) {
-  return [] // TODO
+  if (!Array.isArray(pedidos)) return [] 
+   const normalizar = (str) =>
+    (str || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+       const textoBuscado = normalizar(texto)
+
+  if (!textoBuscado) {
+    return pedidos
+  }
+
+  return pedidos.filter(p => {
+    const clienteNombre = normalizar(p.cliente)
+    return clienteNombre.includes(textoBuscado)
+  })
 }
+
+
 
 // ----------------------------------------------------------------------------
 // MISIÓN 6 · DESTACADO — Los mejores clientes
